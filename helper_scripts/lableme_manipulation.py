@@ -10,17 +10,17 @@ import glob
 import cv2
 import os
 
-base_path = "/home/mitchell/YOLO_data/data/3G-AMP_post_test_postivies/Labeled/Manta 1/"
+base_path = "/home/mitchell/YOLO_data/WAMP-retrain_images/Manta1/"
 save_path = "/home/mitchell/YOLO_data/data/"
-folder_name = "3G-amp_true_positives_Manta1_train_val_"
+folder_name = "WAMP_Manta1_retrain_train_val_"
 
-#train_cfg_name = "/home/mitchell/YOLO_ws/pytorchYolo/cfg/train_test_locs/AMP_3G-AMP_updated_training/amp_3G_addition_true_positives_train.txt"
-#test_cfg_name = "/home/mitchell/YOLO_ws/pytorchYolo/cfg/train_test_locs/AMP_3G-AMP_updated_training/amp_3G_addition_true_positives_test.txt"
+train_cfg_name = "/home/mitchell/YOLO_ws/pytorchYolo/cfg/train_test_locs/WAMP_updated_training/WARM_retrain_train_val.txt"
+test_cfg_name = "/home/mitchell/YOLO_ws/pytorchYolo/cfg/train_test_locs/WAMP_updated_training/WARM_retrain_test.txt"
 #valid_cfg_name = "/home/mitchell/YOLO_ws/pytorchYolo/cfg/train_test_locs/3G_co-registered_blank.txt"
 
 img_files = sorted(glob.glob(base_path + '*.jpg'))
 print(base_path + '*.jpg')
-count = 0 
+count = 0
 test_skip = 5
 #success_skip = 10000000000 # for validation
 #success_count = 0
@@ -30,23 +30,23 @@ val_files = open("all_amp_3G-amp_with_negatives_train.txt", 'r').readlines()
 for i, line in enumerate(val_files):
     val_files[i] = line.rstrip().split('/')[-1]
 """
-    
+print(len(img_files))
 for img_name in img_files:
     _file = img_name.replace(".jpg", ".json")
     img = cv2.imread(img_name)
     #print(img_name)
-    
+
     img_name = img_name.strip('.jpg') + '.jpg'
     _file = _file.strip('.json') + '.json'
-    #print(img_name)    
+    #print(img_name)
     img_width = img.shape[1]
     img_height= img.shape[0]
-    
+
+
     if os.path.exists(_file):
         with open(_file) as json_file:
             data = json.load(json_file)
             if len(data["shapes"]) > 0:
-                
                 for i in range(len(data["shapes"])):
                     label = data["shapes"][i]["label"]
                     points = data["shapes"][i]["points"]
@@ -64,27 +64,27 @@ for img_name in img_files:
                     #print(write_line)
 
                     image_path = save_path + folder_name + "images/" + img_name.split('/')[-1]
-                #print(1, write_line)
-                if count % test_skip != 0:
-                    f = open(label_path, "a+")
-                    f.write(write_line)
-                    f.close()
-                    
-                    #f = open(train_cfg_name, "a+")
-                    #f.write(image_path  + '\n') 
-                    #f.close()
-                    cv2.imwrite(image_path, img)
-                else:
-                    f = open(label_path.replace('train_val', 'test'), "a+")
-                    f.write(write_line)
-                    f.close()
-                    
-                    #f = open(test_cfg_name, "a+")
-                    #f.write(image_path  + '\n' )        
-                    #f.close()
-                    cv2.imwrite(image_path.replace('train_val', 'test'), img)
+                    #print(1, write_line)
+                    if count % test_skip != 0:
+                        f = open(label_path, "a+")
+                        f.write(write_line)
+                        f.close()
 
-                
+                        f = open(train_cfg_name, "a+")
+                        f.write(image_path  + '\n')
+                        f.close()
+                        cv2.imwrite(image_path, img)
+                    else:
+                        f = open(label_path.replace('train_val', 'test'), "a+")
+                        f.write(write_line)
+                        f.close()
+
+                        f = open(test_cfg_name, "a+")
+                        f.write(image_path.replace('train_val', 'test')  + '\n' )
+                        f.close()
+                        cv2.imwrite(image_path.replace('train_val', 'test'), img)
+
+
             else:
                 label_path = save_path + folder_name + "labels/" + _file.split('/')[-1].replace(".json", ".txt")
                 #print(write_line)
@@ -94,45 +94,42 @@ for img_name in img_files:
                 if count % test_skip != 0:
                     f = open(label_path, "a+")
                     f.close()
-                    
-                    #f = open(train_cfg_name, "a+")
-                    #f.write(image_path  + '\n') 
-                    #f.close()
+
+                    f = open(train_cfg_name, "a+")
+                    f.write(image_path  + '\n')
+                    f.close()
                     cv2.imwrite(image_path, img)
                 else:
                     f = open(label_path.replace('train_val', 'test'), "a+")
                     f.close()
-                    
-                    #f = open(test_cfg_name, "a+")
-                    #f.write(image_path  + '\n' )        
-                    #f.close()
+
+                    f = open(test_cfg_name, "a+")
+                    f.write(image_path.replace('train_val', 'test')  + '\n' )
+                    f.close()
                     cv2.imwrite(image_path.replace('train_val', 'test'), img)
     else:
             label_path = save_path + folder_name + "labels/" + _file.split('/')[-1].replace(".json", ".txt")
-            #print(3, write_line)
+            print(_file.split('/')[-1].replace(".json", ".txt"), write_line)
             #print(write_line)
 
             image_path = save_path + folder_name + "images/" + img_name.split('/')[-1]
             if count % test_skip != 0:
                 f = open(label_path, "a+")
                 f.close()
-                
-                #f = open(train_cfg_name, "a+")
-                #f.write(image_path  + '\n') 
-                #f.close()
+
+                f = open(train_cfg_name, "a+")
+                f.write(image_path  + '\n')
+                f.close()
                 cv2.imwrite(image_path, img)
             else:
                 f = open(label_path.replace('train_val', 'test'), "a+")
                 f.close()
-                
-                #f = open(test_cfg_name, "a+")
-                #f.write(image_path  + '\n' )        
-                #f.close()
+
+                f = open(test_cfg_name, "a+")
+                f.write(image_path.replace('train_val', 'test')  + '\n' )
+                f.close()
                 cv2.imwrite(image_path.replace('train_val', 'test'), img)
-                
-            
-    
+
+
+
     count += 1
-        
-            
-            

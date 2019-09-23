@@ -2,7 +2,7 @@
 Inital work done by:
 
 1. https://github.com/ayooshkathuria/pytorch-yolo-v3 (blog post: https://blog.paperspace.com/how-to-implement-a-yolo-object-detector-in-pytorch/).  
-2. Darshan Mheta (https://github.com/darshanmehta17/3G-AMP) re-purposed for specific AMP work.
+2. Darshan Mehta (https://github.com/darshanmehta17/3G-AMP) re-purposed for specific AMP work.
 
 ## Introduction
 

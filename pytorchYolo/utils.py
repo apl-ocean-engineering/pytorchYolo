@@ -201,7 +201,7 @@ def transform_predictions(predictions, input_dim, anchors, num_classes, gpu=Fals
     predictions[:, :, 0] = torch.sigmoid(predictions[:, :, 0])  # x value
     predictions[:, :, 1] = torch.sigmoid(predictions[:, :, 1])  # y value
     predictions[:, :, 4] = torch.sigmoid(predictions[:, :, 4])  # confidence score
-    
+
     predictions[:, :, 5:(5 + num_classes)] = torch.sigmoid(predictions[:, :, 5:(5 + num_classes)])  # class scores
 
     # Create and add the grid offsets to each of the center coordinates
@@ -307,14 +307,14 @@ def filter_transform_predictions(predictions, num_classes, confidence_threshold=
     # Since the number of final predictions after filtering is different
     # for each image in the batch, they need to processed individually.
     batch_size = predictions.size(0)
-    
+
     write = False
     full_ious = []
     full_class_scores = []
-    
+
     count = 0
     for batch_index in range(batch_size):
-        
+
         image_predictions = predictions[batch_index]  # get all bounding boxes for this image
 
         # Since the number of classes to be predicted could be quite high and we only
@@ -324,12 +324,12 @@ def filter_transform_predictions(predictions, num_classes, confidence_threshold=
         max_conf_class_score, max_conf_class_index = torch.max(image_predictions[:, 5: (5 + num_classes)], dim=1)
         max_conf_class_score = max_conf_class_score.float().unsqueeze(1)
         max_conf_class_index = max_conf_class_index.float().unsqueeze(1)
-        
+
         image_predictions = torch.cat((image_predictions[:, :5], max_conf_class_score, max_conf_class_index), 1)
 
         # Next, we filter out all the boxes which had 0 in their confidence score
         non_zero_indices = torch.nonzero(image_predictions[:, 4])  # 4 is the index holding the confidence score
-        
+
         if non_zero_indices.size(0) == 0:  # if there are no valid bounding boxes for this image, then skip
             #full_ious.append(0)
             continue
@@ -341,7 +341,7 @@ def filter_transform_predictions(predictions, num_classes, confidence_threshold=
         # The class indices lie in the last index of the bounding box.
         img_classes = torch.unique(confident_image_predictions[:, -1])
 
-        
+
         # We now perform non-max suppression class-wise.
         for class_ in img_classes:
             # First we gather the boxes which predict the above class
@@ -359,7 +359,7 @@ def filter_transform_predictions(predictions, num_classes, confidence_threshold=
                 #print(confident_image_predictions[idx][5])
                 try:
                     ious = bbox_iou(sorted_predictions[idx].unsqueeze(0), sorted_predictions[idx+1:])
-                    
+
                     #full_ious.append(ious)
                 except (ValueError, IndexError):
                     #full_ious.append(0)
@@ -367,7 +367,7 @@ def filter_transform_predictions(predictions, num_classes, confidence_threshold=
 
                 # Zero out all the detections that have IoU > threshold
                 iou_mask = (ious < nms_threshold).float().unsqueeze(1)
-                
+
                 sorted_predictions[idx+1:] *= iou_mask
                 # Remove the non-zero entries
                 non_zero_ind = torch.nonzero(sorted_predictions[:, 4]).squeeze()
@@ -378,11 +378,11 @@ def filter_transform_predictions(predictions, num_classes, confidence_threshold=
             batch_idx_tensor = sorted_predictions.new(sorted_predictions.size(0), 1).fill_(batch_index)
             seq = batch_idx_tensor, sorted_predictions
             #print('bidx', batch_idx_tensor)
-            
-            
+
+
             for i in range(idx):
                full_class_scores.append(sorted_predictions[i][5])
-            
+
             if len(ious) > 0:
                 for idx in batch_idx_tensor:
                     #print(ious[int(idx.item())])
@@ -397,9 +397,9 @@ def filter_transform_predictions(predictions, num_classes, confidence_threshold=
     # TODO: Optimize the flow of output and nms calculation.
     try:
         #print(full_ious)
-        return output, full_ious, full_class_scores
+        return output, full_class_scores
     except:
-        return 0, [], []
+        return 0, []
 
 
 def load_classes(names_file):
@@ -420,7 +420,7 @@ def parse_data_cfg(data_cfg_file):
     :param data_cfg_file: Path to the data cfg file.
     :return config: Dictionary containing the configuration specified in the input file.
     """
-    
+
     with open(data_cfg_file, 'r') as file_names:
         config_lines = file_names.readlines()
     config = {}
@@ -428,7 +428,7 @@ def parse_data_cfg(data_cfg_file):
         if config_line[0] == "#":
             continue
         key, value = config_line.split('=')
-        
+
         config[key.rstrip()] = value.lstrip()
 
     return config
@@ -474,4 +474,3 @@ if __name__ == '__main__':
     network_info, module_list = create_network(blocks)
     print(len(blocks), len(module_list))
     print(module_list)
-

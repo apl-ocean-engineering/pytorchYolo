@@ -16,10 +16,14 @@ import glob
 
 class Square:
     def __init__(self, lower_corner, width, height):
-        self.lower_x = lower_corner[0]
-        self.lower_y = lower_corner[1]
-        self.upper_x = self.lower_x + width
-        self.upper_y = self.lower_y + height
+        self.lower_x = int(lower_corner[0].item())
+        self.lower_y = int(lower_corner[1].item())
+        self.upper_x = int(self.lower_x + width)
+        self.upper_y = int(self.lower_y + height)
+
+    def print_square(self):
+        print((self.lower_x, self.lower_y), (self.upper_x, self.upper_y))
+
 
 class Detector():
     """
@@ -259,7 +263,7 @@ class YoloImgRun(Detector):
                 batch = batch.cuda()  # move the batch to the GPU
             with torch.no_grad():
                 prediction = self.model.forward(Variable(batch), self.gpu)
-            prediction, all_ious, full_class_scores = utils.filter_transform_predictions(prediction,
+            prediction, full_class_scores = utils.filter_transform_predictions(prediction,
                         self.num_classes, self._conf_thresh, self._nms_thresh)
             end_time_batch = time()
 
@@ -367,6 +371,7 @@ class YoloLiveVideoStream(Detector):
     Child class of Detector. Class to run backend YOLO network from input
     stream of images
     """
+    display = True
     def stream_img(self, img, fname = ' ', display_name_append = ''):
         """
         Main function. Accepts a cv_image and runs the back end YOLO network
@@ -377,8 +382,8 @@ class YoloLiveVideoStream(Detector):
         Returns:
             None
         """
+
         display_name = "frame" + display_name_append
-        mean_iou = -1
         orig_im = img
         img_shape = img.shape
         start_img_time = time()
@@ -391,7 +396,7 @@ class YoloLiveVideoStream(Detector):
 
         with torch.no_grad():
             prediction = self.model.forward(Variable(img), self.gpu)
-        prediction, all_ious, full_class_scores = utils.filter_transform_predictions(prediction, self.num_classes, self._conf_thresh, self._nms_thresh)
+        prediction, full_class_scores = utils.filter_transform_predictions(prediction, self.num_classes, self._conf_thresh, self._nms_thresh)
 
         #sm = torch.nn.Softmax()
         #probs = sm(prediction)
@@ -399,8 +404,9 @@ class YoloLiveVideoStream(Detector):
 
         end_img_time = time()
         if type(prediction) == int:
-            cv2.imshow(display_name, orig_im)
-            key = cv2.waitKey(1)
+            if self.display:
+                cv2.imshow(display_name, orig_im)
+            key = cv2.waitKey(100)
             phrase = "img predicted in %f seconds" % (end_img_time - start_img_time)
             print(phrase)
             print("{0:20s} {1:s}".format("Objects Detected:", ""))
@@ -409,17 +415,7 @@ class YoloLiveVideoStream(Detector):
             if self.save_predictions:
                 f = open("//home/mitchell/YOLO_data/data/AMP_test_detectionLabels/" + fname.replace('.jpg', '.txt'), 'w+')
                 f.close()
-            return False, mean_iou, None
-
-        total_iou = 0
-        total_count = 0
-        #print(all_ious)
-        for iou in all_ious:
-            #print(iou.item())
-            total_iou += iou
-            total_count += 1
-        if total_count > 0:
-            mean_iou = total_iou/total_count
+            return False, [None]
 
 
 
@@ -435,7 +431,7 @@ class YoloLiveVideoStream(Detector):
 
         list(map(lambda x: self.write(x, orig_im), self.output))
         pose_list = []
-        print(self.save_predictions)
+        square_list = []
         if self.save_predictions:
             f = open(self.save_detection_path + fname.replace('.jpg', '.txt'), 'w+')
             for x in self.output:
@@ -446,12 +442,13 @@ class YoloLiveVideoStream(Detector):
                 width_x = abs(c1[0].item() - c2[0].item())
                 width_y = abs(c1[1].item() - c2[1].item())
 
+                sq = Square(c1, width_x, width_y)
+                square_list.append(sq)
+
                 center_x = c1[0].item() + width_x/2
                 center_y = c1[1].item() + width_y/2
                 pose_list.append([center_x/img_shape[1], center_y/img_shape[0], width_x/img_shape[1], width_y/img_shape[0]])
-                #output_write = str(0) + ' ' +  str(center_x/img_shape[0]) + ' ' + str(center_y/img_shape[1]) + ' ' +  str(width_x/img_shape[0]) + ' ' + str(width_y/img_shape[1])
-                #f.write(output_write + '\n')
-            #f.close()
+
             sorted_output = sorted(pose_list)
             for i, write_list in enumerate(sorted_output):
                 if i < len(full_class_scores):
@@ -459,13 +456,12 @@ class YoloLiveVideoStream(Detector):
                 else:
                     output_write = str(0) + ' ' + str(1.0) + ' ' + str(write_list[0]) + ' ' + str(write_list[1]) + ' ' +  str(write_list[2]) + ' ' + str(write_list[3])
                 f.write(output_write + '\n')
-            #print(output_write)
+
             f.close()
-        sq = Square(c1, width_x, width_y)
-        #cv2.circle(orig_im, (sq.lower_x, sq.lower_y), 10, (255, 255, 255))
-        #cv2.circle(orig_im, (sq.upper_x, sq.upper_y), 10, (0, 0, 255))
-        cv2.imshow(display_name, orig_im)
-        cv2.waitKey(1)
+
+        if self.display:
+            cv2.imshow(display_name, orig_im)
+        cv2.waitKey(100)
 
 
         objs = [self.classes[int(x[-1])] for x in prediction]
@@ -473,11 +469,11 @@ class YoloLiveVideoStream(Detector):
         print(phrase)
         print("{0:20s} {1:s}".format("Objects Detected:", " ".join(objs)))
         print("----------------------------------------------------------")
-        key = cv2.waitKey(1)
+        key = cv2.waitKey(100)
         if key & 0xFF == ord('q'):
-            return True, mean_iou, Square(c2, width_x, width_y)
+            return True, square_list
 
-        return True, mean_iou, Square(c2, width_x, width_y)
+        return True, square_list
 
 
 
@@ -537,30 +533,20 @@ class YoloImageStream(YoloLiveVideoStream):
     Child class of YoloLiveVideoStream. Class to stream a series of images one
     at a time to the YOLO network
     """
-    def run(self, pause = 0.33):
+    def run(self, pause = 0.01):
         """
         Main function. Find all images in a folder, send to YOLO network individually
         """
 
         if not self._use_dual_manta:
             cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
-            print('here')
             full_images = sorted(glob.glob(self._images + "/*"))
-            count = 0
-            total_iou = 0
             for frame in full_images:
                 img = cv2.imread(frame)
-                print(frame)
                 if img is None:
                     continue
 
-                detection, mean_iou, sq = self.stream_img(img, frame.split('/')[-1])
-                if mean_iou != -1:
-                    total_iou+=mean_iou
-                    count += 1
-                    #print(mean_iou)
-
-
+                detection, sq = self.stream_img(img, frame.split('/')[-1])
 
                 sleep(pause)
         else:
@@ -570,7 +556,6 @@ class YoloImageStream(YoloLiveVideoStream):
             manta2 = sorted(glob.glob(self._images + "/Manta 2/*"))
 
             images = zip(manta1, manta2)
-            total_iou = 0
             for frame1, frame2 in images:
                 img1 = cv2.imread(frame1)
                 img2 = cv2.imread(frame2)

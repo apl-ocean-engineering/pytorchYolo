@@ -15,5 +15,5 @@ if __name__ == '__main__':
             detector = YoloImgRun(args)
         else:
             detector = YoloImageStream(args)
-        
+
     detector.run()

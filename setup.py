@@ -1,11 +1,12 @@
-from setuptools import setup
+from distutils.core import setup
 
 setup(name='pytorchYolo',
       version='0.1',
-      description='The funniest joke in the world',
-      url='http://github.com/storborg/funniest',
-      author='Flying Circus',
-      author_email='flyingcircus@example.com',
+      description='YOLO implementation for PYtorch geared towards AMP images',
+      url='https://github.com/apl-ocean-engineering/pytorchYolo',
+      author='Mitchell Scott',
+      author_email='miscott@uw.edu',
       license='MIT',
       packages=['pytorchYolo'],
-      zip_safe=False)
+      long_description=open('README.md').read(),
+)

@@ -372,7 +372,7 @@ class YoloLiveVideoStream(Detector):
     stream of images
     """
     display = True
-    def stream_img(self, img, fname = ' ', display_name_append = ''):
+    def stream_img(self, img, fname = ' ', display_name_append = '', wait_key = 100):
         """
         Main function. Accepts a cv_image and runs the back end YOLO network
 
@@ -406,7 +406,7 @@ class YoloLiveVideoStream(Detector):
         if type(prediction) == int:
             if self.display:
                 cv2.imshow(display_name, orig_im)
-            key = cv2.waitKey(100)
+            key = cv2.waitKey(wait_key)
             phrase = "img predicted in %f seconds" % (end_img_time - start_img_time)
             print(phrase)
             print("{0:20s} {1:s}".format("Objects Detected:", ""))
@@ -461,7 +461,7 @@ class YoloLiveVideoStream(Detector):
 
         if self.display:
             cv2.imshow(display_name, orig_im)
-        cv2.waitKey(100)
+        cv2.waitKey(wait_key)
 
 
         objs = [self.classes[int(x[-1])] for x in prediction]
@@ -469,7 +469,7 @@ class YoloLiveVideoStream(Detector):
         print(phrase)
         print("{0:20s} {1:s}".format("Objects Detected:", " ".join(objs)))
         print("----------------------------------------------------------")
-        key = cv2.waitKey(100)
+        key = cv2.waitKey(wait_key)
         if key & 0xFF == ord('q'):
             return True, square_list
 

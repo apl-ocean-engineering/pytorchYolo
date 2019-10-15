@@ -51,8 +51,8 @@ class ServerProtocol:
         (conn, addr) = self.socket.accept()
         try:
             while True:
-
                 # receive data stream. it won't accept data packet greater than 1024 bytes
+                header = conn.recv(1)
                 sb = conn.recv(4)
                 (size,) = unpack('!I', sb)
                 images = []
@@ -61,8 +61,6 @@ class ServerProtocol:
                     (length,) = unpack('>Q', bs)
                     data = b''
                     while len(data) < length:
-                        # doing it in batches is generally better than trying
-                        # to do it all in one go, so I believe.
                         to_read = length - len(data)
                         data += conn.recv(
                             4096 if to_read > 4096 else to_read)

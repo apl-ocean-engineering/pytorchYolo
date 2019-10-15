@@ -14,7 +14,7 @@ Where:
 
 from pytorchYolo.detector import YoloLiveVideoStream
 from pytorchYolo.argLoader import ArgLoader
-from pytorchYolo.stereo_processing import StereoProcessing
+# from pytorchYolo.stereo_processing import StereoProcessing
 
 from os.path import dirname, abspath
 
@@ -33,7 +33,7 @@ port = 5000
 class ServerProtocol:
 
     def __init__(self, args, detector):
-        self.SP = StereoProcessing(args, detector)
+        # self.SP = StereoProcessing(args, detector)
 
         self.socket = None
         self.output_dir = '.'
@@ -90,7 +90,7 @@ class ServerProtocol:
     def stereo_detection(self, img1, img2 = None):
         # time_init = time.time()
         self.detector.display = False
-        detection = self.SP.run_images(img1, img2=img2)
+        # detection = self.SP.run_images(img1, img2=img2)
 
         return detection
 

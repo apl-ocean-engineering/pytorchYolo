@@ -51,7 +51,7 @@ class Detector():
         self._use_dual_manta = args.use_dual_manta
 
         self.save_predictions = args.save_predictions
-        print(1, args.save_predictions)
+        self._verbose = False
         self._parse_data_init()
 
         #Use GPU, if possible
@@ -154,7 +154,8 @@ class Detector():
 
     def _create_model(self):
         # Initialize the network and load the weights from the file
-        print('Loading the network...')
+        if self._verbose:
+            print('Loading the network...')
         model = darknet.Darknet(self._cfg_file)
         model.load_weights(self._weights_file)
         model.set_input_dimension(self._img_size)
@@ -162,7 +163,8 @@ class Detector():
         if self.gpu:
             model.cuda()
 
-        print('Network loaded successfully.')
+        if self._verbose:
+            print('Network loaded successfully.')
 
         # Set the model in evaluation mode
         model.eval()
@@ -204,8 +206,9 @@ class YoloImgRun(Detector):
             imlist = []
             imlist.append(os.path.join(os.path.realpath('.'), self._images))
         except FileNotFoundError:
-            print("No file or directory found with the name {}"
-                                              .format(self._images))
+            if self._verbose:
+                print("No file or directory found with the name {}"
+                                                  .format(self._images))
             exit()
         self._end_time_read_dir = time()
 
@@ -272,11 +275,12 @@ class YoloImgRun(Detector):
                         self._batch_size: min((idx + 1) *
                         self._batch_size, len(imlist))]):
                     im_id = idx * self._batch_size + im_num
-                    print("{0:20s} predicted in {1:6.3f} seconds"
-                          .format(image.split("/")[-1],
-                        (end_time_batch - start_time_batch) / self._batch_size))
-                    print("{0:20s} {1:s}".format("Objects Detected:", ""))
-                    print("----------------------------------------------------------")
+                    if self._verbose:
+                        print("{0:20s} predicted in {1:6.3f} seconds"
+                              .format(image.split("/")[-1],
+                            (end_time_batch - start_time_batch) / self._batch_size))
+                        print("{0:20s} {1:s}".format("Objects Detected:", ""))
+                        print("----------------------------------------------------------")
                 continue
 
             # transform the image reference index from batch level to imlist level
@@ -294,12 +298,12 @@ class YoloImgRun(Detector):
             for im_num, image in enumerate(imlist[idx * self._batch_size: min((idx + 1) * self._batch_size, len(imlist))]):
                 im_id = idx * self._batch_size + im_num
                 objs = [self.classes[int(x[-1])] for x in output if int(x[0]) == im_id]
-
-                print("{0:20s} predicted in {1:6.3f} seconds".
-                      format(image.split("/")[-1],
-                      (end_time_batch - start_time_batch) / self._batch_size))
-                print("{0:20s} {1:s}".format("Objects Detected:", " ".join(objs)))
-                print("----------------------------------------------------------")
+                if self._verbose:
+                    print("{0:20s} predicted in {1:6.3f} seconds".
+                          format(image.split("/")[-1],
+                          (end_time_batch - start_time_batch) / self._batch_size))
+                    print("{0:20s} {1:s}".format("Objects Detected:", " ".join(objs)))
+                    print("----------------------------------------------------------")
 
             if self.gpu:
                 torch.cuda.synchronize()
@@ -348,8 +352,8 @@ class YoloImgRun(Detector):
          # write the files
         list(map(cv2.imwrite, detection_names, loaded_images))
         self._end_time_draw_box = time()
-
-        self._print_end_stats()
+        if self._verbose:
+            self._print_end_stats()
 
 
         torch.cuda.empty_cache()
@@ -408,13 +412,11 @@ class YoloLiveVideoStream(Detector):
                 cv2.imshow(display_name, orig_im)
             key = cv2.waitKey(wait_key)
             phrase = "img predicted in %f seconds" % (end_img_time - start_img_time)
-            print(phrase)
-            print("{0:20s} {1:s}".format("Objects Detected:", ""))
-            print("----------------------------------------------------------")
-            print(self.save_predictions)
-            if self.save_predictions:
-                f = open("//home/mitchell/YOLO_data/data/AMP_test_detectionLabels/" + fname.replace('.jpg', '.txt'), 'w+')
-                f.close()
+            if self._verbose:
+                print(phrase)
+                print("{0:20s} {1:s}".format("Objects Detected:", ""))
+                print("----------------------------------------------------------")
+                print(self.save_predictions)
             return False, [None]
 
 
@@ -466,9 +468,10 @@ class YoloLiveVideoStream(Detector):
 
         objs = [self.classes[int(x[-1])] for x in prediction]
         phrase = "img predicted in %f seconds" % (end_img_time - start_img_time)
-        print(phrase)
-        print("{0:20s} {1:s}".format("Objects Detected:", " ".join(objs)))
-        print("----------------------------------------------------------")
+        if self._verbose:
+            print(phrase)
+            print("{0:20s} {1:s}".format("Objects Detected:", " ".join(objs)))
+            print("----------------------------------------------------------")
         key = cv2.waitKey(wait_key)
         if key & 0xFF == ord('q'):
             return True, square_list
@@ -523,7 +526,8 @@ class YoloVideoRun(YoloLiveVideoStream):
         while cap.isOpened():
             ret, frame = cap.read()
             if ret:
-                print("FPS of the video is {:5.2f}".format( frames / (time() - start)))
+                if self._verbose:
+                    print("FPS of the video is {:5.2f}".format( frames / (time() - start)))
 
             else:
                 break

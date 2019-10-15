@@ -14,16 +14,24 @@ Where:
 
 from pytorchYolo.detector import YoloLiveVideoStream
 from pytorchYolo.argLoader import ArgLoader
+from pytorchYolo.stereo_processing import StereoProcessing
+
+from os.path import dirname, abspath
+
 import cv2
 import os
+
 from socket import *
 from struct import pack, unpack
 import numpy as np
+import time
 
 
 class ServerProtocol:
 
-    def __init__(self, detector):
+    def __init__(self, args, detector):
+        self.SP = StereoProcessing(args, detector)
+
         self.socket = None
         self.output_dir = '.'
         self.file_num = 1
@@ -48,7 +56,6 @@ class ServerProtocol:
                 for i in range(size):
                     bs = conn.recv(8)
                     (length,) = unpack('>Q', bs)
-                    print(length)
                     data = b''
                     while len(data) < length:
                         # doing it in batches is generally better than trying
@@ -57,7 +64,9 @@ class ServerProtocol:
                         data += conn.recv(
                             4096 if to_read > 4096 else to_read)
 
-                    images.append(data)
+                    nparr = np.fromstring(data, np.uint8)
+                    img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    images.append(img_np)
                 if len(images) >= 2:
                     detection = self.stereo_detection(
                                     images[0], img2 = images[1])
@@ -73,32 +82,24 @@ class ServerProtocol:
                 conn.send(return_data)
 
         finally:
-             conn.shutdown(socket.SHUT_WR)
+             #conn.shutdown(socket.SHUT_WR)
              conn.close()
 
 
     def stereo_detection(self, img1, img2 = None):
-        detection1 = self.run_image(img1)
-        if img2 is not None:
-            detection2 = self.run_image(img2)
-        else:
-            detection2 = False
-
-        if detection1 and detection2:
-            return True
-
-        return False
+        time_init = time.time()
+        self.detector.display = False
+        detection = self.SP.run_images(img1, img2 =img2)
+        print("Time elapsed", time.time() - time_init)
+        return detection
 
     def run_image(self, img):
         print("here")
         nparr = np.fromstring(img, np.uint8)
         img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-        self.detector.display = False
+        
         detection, _ = self.detector.stream_img(img_np, wait_key =1)
 
-        cv2.imshow("img_np", img_np)
-        cv2.waitKey(1)
 
         return detection
 
@@ -110,9 +111,23 @@ class ServerProtocol:
 
 if __name__ == '__main__':
     argLoader = ArgLoader()
+    argLoader.parser.add_argument(
+        "--calibration_yaml",
+        help="Path to calibration yaml specify path of calibration files",
+        default=dirname(dirname(abspath(
+            __file__))) + "/cfg/calibrationConfig.yaml")
+    argLoader.parser.add_argument(
+        "--save_path",
+        help="Path to save positive detections",
+        default=dirname(dirname(abspath(
+            __file__))) + "/data")
+    argLoader.parser.add_argument(
+        "--base_path", help="Base folder to calibration values",
+        default=dirname(dirname(abspath(__file__))) + "/calibration/")
+
     args = argLoader.args  # parse the command line arguments
 
     detector = YoloLiveVideoStream(args)
 
-    sp = ServerProtocol(detector)
+    sp = ServerProtocol(args, detector)
     sp.handle_images('127.0.0.1', 5000)

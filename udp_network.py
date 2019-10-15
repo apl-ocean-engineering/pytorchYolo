@@ -87,19 +87,9 @@ class ServerProtocol:
 
 
     def stereo_detection(self, img1, img2 = None):
-        time_init = time.time()
+        # time_init = time.time()
         self.detector.display = False
-        detection = self.SP.run_images(img1, img2 =img2)
-        print("Time elapsed", time.time() - time_init)
-        return detection
-
-    def run_image(self, img):
-        print("here")
-        nparr = np.fromstring(img, np.uint8)
-        img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        
-        detection, _ = self.detector.stream_img(img_np, wait_key =1)
-
+        detection = self.SP.run_images(img1, img2=img2)
 
         return detection
 

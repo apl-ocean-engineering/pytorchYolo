@@ -90,6 +90,8 @@ class StereoProcessing:
     SQ_X_EXTEND = 0
     SQ_Y_EXTEND = 50
 
+    X_MOTION = 5
+
     def __init__(self, args, detector):
         self.detector = detector
 
@@ -185,7 +187,7 @@ class StereoProcessing:
             img, wait_key=1)
 
 
-        squares = [] #self.build_squares(img.shape[0:2], yolo_squares)
+        squares = self.build_squares(img.shape[0:2], yolo_squares)
 
         return detection, squares
 
@@ -196,7 +198,7 @@ class StereoProcessing:
             sq2_init = copy.deepcopy(sq2)
             # draw_circles(img2, sq2)
             # Search forward
-            valid = sq2.move_square(motion=1)
+            valid = sq2.move_square(motion=self.X_MOTION)
             while valid:
                 overlap, sq1 = self.test_square_overlap(
                     sq2, squares1,
@@ -213,7 +215,7 @@ class StereoProcessing:
                 valid = sq2.move_square()
 
             # Search forward
-            valid = sq2.move_square(motion=-1)
+            valid = sq2.move_square(motion=-self.X_MOTION)
             while valid:
                 overlap, sq1 = self.test_square_overlap(
                     sq2, squares1,
@@ -229,15 +231,13 @@ class StereoProcessing:
                     return True
                 valid = sq2.move_square()
 
-            print("time elapsed", time.time() - time_init)
-
         return False
 
     def load_undistort_rectify_image(self, img, K1, d1, map1, map2):
         # raw_img = copy.deepcopy(img)
 
         # undistort images
-        # img = cv2.undistort(img, K1, d1)
+        #img = cv2.undistort(img, K1, d1)
 
         # rectify images
         img = cv2.remap(img, map1, map2, cv2.INTER_LINEAR)

@@ -72,7 +72,7 @@ class Detector():
         self._start_time_draw_box = time()
         self._end_time_draw_box = time()
 
-        self.save_detection_path = "/home/mitchell/YOLO_data/full_trial_analysis/true_negaitves/detections/"
+        self.save_detection_path = " "
 
 
     def _parse_data_init(self):
@@ -154,8 +154,7 @@ class Detector():
 
     def _create_model(self):
         # Initialize the network and load the weights from the file
-        if self._verbose:
-            print('Loading the network...')
+        print('Loading the network...')
         model = darknet.Darknet(self._cfg_file)
         model.load_weights(self._weights_file)
         model.set_input_dimension(self._img_size)
@@ -163,8 +162,7 @@ class Detector():
         if self.gpu:
             model.cuda()
 
-        if self._verbose:
-            print('Network loaded successfully.')
+        print('Network loaded successfully.')
 
         # Set the model in evaluation mode
         model.eval()

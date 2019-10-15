@@ -27,6 +27,9 @@ import numpy as np
 import time
 
 
+IP = '127.0.0.1'
+port = 5000
+
 class ServerProtocol:
 
     def __init__(self, args, detector):
@@ -107,11 +110,6 @@ if __name__ == '__main__':
         default=dirname(dirname(abspath(
             __file__))) + "/cfg/calibrationConfig.yaml")
     argLoader.parser.add_argument(
-        "--save_path",
-        help="Path to save positive detections",
-        default=dirname(dirname(abspath(
-            __file__))) + "/data")
-    argLoader.parser.add_argument(
         "--base_path", help="Base folder to calibration values",
         default=dirname(dirname(abspath(__file__))) + "/calibration/")
 
@@ -120,4 +118,4 @@ if __name__ == '__main__':
     detector = YoloLiveVideoStream(args)
 
     sp = ServerProtocol(args, detector)
-    sp.handle_images('127.0.0.1', 5000)
+    sp.handle_images(IP, port)

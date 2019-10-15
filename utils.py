@@ -7,7 +7,7 @@ import torch.nn as nn
 
 from pytorchYolo.constants import *
 from pytorchYolo.layers import EmptyLayer, DetectionLayer
-
+import os
 
 def parse_cfg(cfgfile):
     """
@@ -25,6 +25,8 @@ def parse_cfg(cfgfile):
     blocks (list): List of blocks in the neural network.
 
     """
+    if cfgfile[0] != '/':
+       cfgfile = cfgfile
     file = open(cfgfile, 'r')
     lines = file.read().split('\n')  # store the lines in a list
     lines = [x for x in lines if len(x) > 0]  # get read of the empty lines
@@ -408,7 +410,6 @@ def load_classes(names_file):
     :param names_file: Path to the file containing the list of class names.
     :return class_names: List of class names.
     """
-    print(names_file)
     with open(names_file, 'r') as file_names:
         class_names = file_names.readlines()
     class_names = list(filter(len, map(str.strip, class_names)))

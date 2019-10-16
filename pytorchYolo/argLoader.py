@@ -21,7 +21,7 @@ class ArgLoader:
         self.parser.add_argument("--nms_thresh", help="IOU threshold for non-max suppression", default=0.4, type=float)
         self.parser.add_argument("--img_size", help="Input resolution of the network. Increase to increase accuracy. "
                                                "Decrease to increase speed", default=416, type=int)
-        self.parser.add_argument("--save_predictions", help="Save network predictions", default=True, type=bool)
+        self.parser.add_argument("--save_predictions", help="Save network predictions", default=False, type=bool)
         self.parser.add_argument("--use_dual_manta", help="To evalue both Manta 1 and Manta 2. If true, point images to base folder", default=False, type=bool)
         
     @property

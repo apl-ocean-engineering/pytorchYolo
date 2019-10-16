@@ -14,7 +14,7 @@ Where:
 
 from pytorchYolo.detector import YoloLiveVideoStream
 from pytorchYolo.argLoader import ArgLoader
-# from pytorchYolo.stereo_processing import StereoProcessing
+from pytorchYolo.stereo_processing import StereoProcessing
 
 from os.path import dirname, abspath
 
@@ -27,13 +27,13 @@ import numpy as np
 import time
 
 
-IP = '127.0.0.1'
-port = 5000
+IP = '192.168.1.1'
+port = 50000
 
 class ServerProtocol:
 
     def __init__(self, args, detector):
-        # self.SP = StereoProcessing(args, detector)
+        self.SP = StereoProcessing(args, detector)
 
         self.socket = None
         self.output_dir = '.'
@@ -47,15 +47,23 @@ class ServerProtocol:
         """
         self.socket = socket(AF_INET, SOCK_STREAM)
         self.socket.bind((server_ip, server_port))
-        self.socket.listen(5)
-        (conn, addr) = self.socket.accept()
+        self.socket.listen(1)
+        # (conn, addr) = self.socket.accept()
+        count = 0
         try:
             while True:
+                """
+                count += 1
+                print("start")
+                print(count)
+                (conn, addr) = self.socket.accept()
                 # receive data stream. it won't accept data packet greater than 1024 bytes
                 header = conn.recv(1)
-                sb = conn.recv(4)
-                (size,) = unpack('!I', sb)
+                print(header)
+                # sb = conn.recv(4)
+                # (size,) = unpack('!I', sb)
                 images = []
+                
                 for i in range(size):
                     bs = conn.recv(8)
                     (length,) = unpack('>Q', bs)
@@ -79,8 +87,19 @@ class ServerProtocol:
                     data = True
                 else:
                     data = False
-                return_data = pack('?', data)
-                conn.send(return_data)
+                """
+                img1 = cv2.imread('cfg/practice_images/Manta1_mini/2018_10_17_12_58_10.52.jpg')
+                img2 = cv2.imread('cfg/practice_images/Manta1_mini/2018_10_17_12_58_10.71.jpg')
+                print(type(img1), type(img2))
+                detection = self.stereo_detection(img1, img2)
+                #cv2.imshow("img1", img1)
+                #cv2.imshow("img2", img2)
+                #cv2.waitKey(0)
+                #return_data = pack('?', data)
+                
+                #conn.send(return_data)
+                
+                time.sleep(0.1)
 
         finally:
              #conn.shutdown(socket.SHUT_WR)
@@ -90,7 +109,7 @@ class ServerProtocol:
     def stereo_detection(self, img1, img2 = None):
         # time_init = time.time()
         self.detector.display = False
-        # detection = self.SP.run_images(img1, img2=img2)
+        detection = self.SP.run_images(img1, img2=img2)
 
         return detection
 

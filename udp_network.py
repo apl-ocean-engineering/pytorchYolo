@@ -15,6 +15,7 @@ Where:
 from pytorchYolo.detector import YoloLiveVideoStream
 from pytorchYolo.argLoader import ArgLoader
 from pytorchYolo.stereo_processing import StereoProcessing
+import copy
 
 from os.path import dirname, abspath
 
@@ -27,8 +28,8 @@ import numpy as np
 import time
 
 
-IP = '192.168.1.1'
-port = 50000
+server_ip = '127.0.0.1'
+server_port = 50000
 
 class ServerProtocol:
 
@@ -40,77 +41,90 @@ class ServerProtocol:
         self.file_num = 1
 
         self.detector = detector
+        
 
     def handle_images(self, server_ip, server_port):
         """
         Accepts 2 MANTA Images
         """
-        self.socket = socket(AF_INET, SOCK_STREAM)
-        self.socket.bind((server_ip, server_port))
-        self.socket.listen(1)
-        # (conn, addr) = self.socket.accept()
-        count = 0
-        try:
+        with socket(AF_INET, SOCK_STREAM) as s:
+            s.bind((server_ip, server_port))
+            s.listen(1)
+            #(conn, addr) = s.accept()
+            count = 0
+#            try:
             while True:
-                """
-                count += 1
-                print("start")
-                print(count)
-                (conn, addr) = self.socket.accept()
-                # receive data stream. it won't accept data packet greater than 1024 bytes
-                header = conn.recv(1)
-                print(header)
-                # sb = conn.recv(4)
-                # (size,) = unpack('!I', sb)
-                images = []
+                    
+                    time.sleep(1.0)
+    
+                    count += 1
+                    (conn, addr) = s.accept()
+                    # receive data stream. it won't accept data packet greater than 1024 bytes
+                    header = conn.recv(1)
+                    images = []
+                    
+                    for i in range(2):
+                        sb = conn.recv(4)
+                        (length,) = unpack('I', sb)
+                        #print(length)
+                        
+                        data_list = []
+                        while len(data_list) < length:
+                            #print(len(data_list))
+                            to_read = length - len(data_list)
+                            count +=1028
+                            
+                            data = conn.recv(
+                                4096 if to_read > 4096 else to_read)
+                            data_list.extend(data)
+    
+                        nparr = np.array(data_list, dtype=np.uint8)
+                        nparr = nparr.reshape((2056, 2464))
+                        images.append(nparr)
+                        
+                    
+                    
+                    if len(images) >= 2:
+                        
+                        detection = self.stereo_detection(
+                                        images[0], img2 = images[1])
+                    else:
+                        detection = self.stereo_detection(
+                                        images[0])
+                    
+                    #print("det2", detection)
+                    
                 
-                for i in range(size):
-                    bs = conn.recv(8)
-                    (length,) = unpack('>Q', bs)
-                    data = b''
-                    while len(data) < length:
-                        to_read = length - len(data)
-                        data += conn.recv(
-                            4096 if to_read > 4096 else to_read)
-
-                    nparr = np.fromstring(data, np.uint8)
-                    img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                    images.append(img_np)
-                if len(images) >= 2:
-                    detection = self.stereo_detection(
-                                    images[0], img2 = images[1])
-                else:
-                    detection = self.stereo_detection(
-                                    images[0])
-
-                if detection:
-                    data = True
-                else:
-                    data = False
-                """
-                img1 = cv2.imread('cfg/practice_images/Manta1_mini/2018_10_17_12_58_10.52.jpg')
-                img2 = cv2.imread('cfg/practice_images/Manta1_mini/2018_10_17_12_58_10.71.jpg')
-                print(type(img1), type(img2))
-                detection = self.stereo_detection(img1, img2)
-                #cv2.imshow("img1", img1)
-                #cv2.imshow("img2", img2)
-                #cv2.waitKey(0)
-                #return_data = pack('?', data)
+                    
+                   # img1 = cv2.imread('cfg/practice_images/Manta1_mini/2018_10_17_12_58_10.52.jpg')
+                    #img2 = cv2.imread('cfg/practice_images/Manta1_mini/2018_10_17_12_58_10.71.jpg')
+                    #print(type(img1), type(img2))
+                    #detection = self.stereo_detection(img1, img2)
+                    if detection:
+                        data = True
+                    else:
+                        data = False                   
+                    #cv2.imshow("img1", img1)
+                    #cv2.imshow("img2", img2)
+                    #cv2.waitKey(0)
+                    return_data = pack('?', data)
+                    
+                    conn.send(return_data)
                 
-                #conn.send(return_data)
                 
-                time.sleep(0.1)
 
-        finally:
-             #conn.shutdown(socket.SHUT_WR)
-             conn.close()
+            #finally:
+                 #conn.shutdown(socket.SHUT_WR)
+             #    conn.close()
 
 
     def stereo_detection(self, img1, img2 = None):
-        # time_init = time.time()
+        #if img1.shape[2] != 3:
+        img1 = cv2.cvtColor(img1, cv2.COLOR_GRAY2RGB)
+        img2 = cv2.cvtColor(img2, cv2.COLOR_GRAY2RGB)
         self.detector.display = False
         detection = self.SP.run_images(img1, img2=img2)
-
+        
         return detection
 
 
@@ -135,4 +149,4 @@ if __name__ == '__main__':
     detector = YoloLiveVideoStream(args)
 
     sp = ServerProtocol(args, detector)
-    sp.handle_images(IP, port)
+    sp.handle_images(server_ip, server_port)

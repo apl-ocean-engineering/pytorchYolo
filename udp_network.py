@@ -31,6 +31,9 @@ import time
 server_ip = '127.0.0.1'
 server_port = 50000
 
+IMG1_NAME='img1'
+IMG2_NAME='img2'
+
 class ServerProtocol:
 
     def __init__(self, args, detector):
@@ -42,6 +45,9 @@ class ServerProtocol:
 
         self.detector = detector
         
+        cv2.namedWindow(IMG1_NAME, cv2.WINDOW_NORMAL)
+        cv2.namedWindow(IMG2_NAME, cv2.WINDOW_NORMAL)
+        
 
     def handle_images(self, server_ip, server_port):
         """
@@ -50,40 +56,31 @@ class ServerProtocol:
         with socket(AF_INET, SOCK_STREAM) as s:
             s.bind((server_ip, server_port))
             s.listen(1)
-            #(conn, addr) = s.accept()
-            count = 0
-#            try:
+            (conn, addr) = s.accept()
+
             while True:
-                    
-                    time.sleep(1.0)
-    
-                    count += 1
-                    (conn, addr) = s.accept()
-                    # receive data stream. it won't accept data packet greater than 1024 bytes
+                    time_inital = time.time()
                     header = conn.recv(1)
-                    images = []
-                    
+                    images = []                  
                     for i in range(2):
+                        count = 0
                         sb = conn.recv(4)
                         (length,) = unpack('I', sb)
-                        #print(length)
-                        
-                        data_list = []
-                        while len(data_list) < length:
-                            #print(len(data_list))
-                            to_read = length - len(data_list)
-                            count +=1028
+                        data_arr_lst = []
+                        while count < length:
+                            to_read = length - count
                             
                             data = conn.recv(
                                 4096 if to_read > 4096 else to_read)
-                            data_list.extend(data)
-    
-                        nparr = np.array(data_list, dtype=np.uint8)
-                        nparr = nparr.reshape((2056, 2464))
-                        images.append(nparr)
-                        
+                            
+                            buff = np.frombuffer(data, np.uint8)
+                            data_arr_lst.append(buff)
+                            count+=len(data)
+                        img = np.concatenate(data_arr_lst, axis=0).reshape((2056, 2464))
+                        images.append(img)
                     
-                    
+                    print("Time elapsed", time.time() - time_inital)                    
+                    cv2.imshow(IMG1_NAME, images[0])    
                     if len(images) >= 2:
                         
                         detection = self.stereo_detection(
@@ -92,30 +89,19 @@ class ServerProtocol:
                         detection = self.stereo_detection(
                                         images[0])
                     
-                    #print("det2", detection)
                     
-                
-                    
-                   # img1 = cv2.imread('cfg/practice_images/Manta1_mini/2018_10_17_12_58_10.52.jpg')
-                    #img2 = cv2.imread('cfg/practice_images/Manta1_mini/2018_10_17_12_58_10.71.jpg')
-                    #print(type(img1), type(img2))
-                    #detection = self.stereo_detection(img1, img2)
+                    detection = True
                     if detection:
                         data = True
                     else:
                         data = False                   
-                    #cv2.imshow("img1", img1)
-                    #cv2.imshow("img2", img2)
-                    #cv2.waitKey(0)
+                        
                     return_data = pack('?', data)
+
+                    
                     
                     conn.send(return_data)
-                
-                
-
-            #finally:
-                 #conn.shutdown(socket.SHUT_WR)
-             #    conn.close()
+                    
 
 
     def stereo_detection(self, img1, img2 = None):

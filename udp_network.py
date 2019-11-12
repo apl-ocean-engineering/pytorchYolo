@@ -14,7 +14,7 @@ Where:
 
 from pytorchYolo.detector import YoloLiveVideoStream
 from pytorchYolo.argLoader import ArgLoader
-from pytorchYolo.stereo_processing import StereoProcessing
+from ampProc.stereo_processing import StereoProcessing
 
 from os.path import dirname, abspath
 

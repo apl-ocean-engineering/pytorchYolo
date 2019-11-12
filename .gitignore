@@ -2,6 +2,7 @@
 data/*
 .idea/*
 weights/*
+output/*
 *.egg-info
 helper_scripts/*
 cfg/*

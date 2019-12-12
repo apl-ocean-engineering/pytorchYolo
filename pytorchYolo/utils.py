@@ -326,7 +326,6 @@ def filter_transform_predictions(predictions, num_classes, confidence_threshold=
         max_conf_class_index = max_conf_class_index.float().unsqueeze(1)
 
         image_predictions = torch.cat((image_predictions[:, :5], max_conf_class_score, max_conf_class_index), 1)
-
         # Next, we filter out all the boxes which had 0 in their confidence score
         non_zero_indices = torch.nonzero(image_predictions[:, 4])  # 4 is the index holding the confidence score
 
@@ -344,6 +343,7 @@ def filter_transform_predictions(predictions, num_classes, confidence_threshold=
 
         # We now perform non-max suppression class-wise.
         for class_ in img_classes:
+            #print("cls", class_)
             # First we gather the boxes which predict the above class
             image_predictions_class = confident_image_predictions[confident_image_predictions[:, -1] ==
                                                                   class_].view(-1, 7)

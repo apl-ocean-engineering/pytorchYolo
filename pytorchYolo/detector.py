@@ -10,9 +10,9 @@ from pytorchYolo import darknet
 import pickle as pkl
 import pandas as pd
 import random
-import numpy as np
 
 import glob
+
 
 class Square:
     def __init__(self, lower_corner, width, height):
@@ -38,8 +38,9 @@ class Detector():
         -inp_dim (property): verifies the img_size is proper
         -get_mode: Return the model
     """
+
     def __init__(self, args):
-        #Load and parse args
+        # Load and parse args
         self._images = args.images
         self._videofile = args.video
         self._batch_size = args.batch_size
@@ -49,20 +50,22 @@ class Detector():
         self._output_dir = args.output
         self._img_size = args.img_size
         self._use_dual_manta = args.use_dual_manta
+        self._display_classification = args.display_classification
+        print("self._display_classification", args.display_classification)
 
         self.save_predictions = args.save_predictions
-        self._verbose = False
+        self._verbose = args.verbose
         self._parse_data_init()
 
-        #Use GPU, if possible
+        # Use GPU, if possible
         self.gpu = torch.cuda.is_available()
-        #self.gpu = False
+        # self.gpu = False
 
         self._create_model()
 
         self._imlist_len = 0
 
-        #Initalize time stats
+        # Initalize time stats
         self._start_time_det_loop = time()
         self._start_time_read_dir = time()
         self._end_time_read_dir = time()
@@ -77,8 +80,9 @@ class Detector():
         self.save_images = args.save_images
 
 
+
     def _parse_data_init(self):
-        data_config = utils.parse_data_cfg(self._data_cfg_file) #parse the data config file
+        data_config = utils.parse_data_cfg(self._data_cfg_file) # parse the data config file
         base_path = data_config[constants.BASE_PATH].rstrip()
         if data_config[constants.CONF_NAMES][0] == '/':
             names_path = data_config[constants.CONF_NAMES].rstrip()
@@ -129,6 +133,7 @@ class Detector():
         Return:
             img: The final image containing the bounding boxes drawn.
         """
+
         colors = self._get_colors()
         class_color_pair = [(class_name, random.choice(colors))
             for class_name in self.classes]  # assign a color to each class
@@ -143,8 +148,10 @@ class Detector():
         t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 1, 1)[0]
         c2 = c1[0] + t_size[0] + 3, c1[1] + t_size[1] + 4
         cv2.rectangle(img, c1, c2, color, -1)
-        cv2.putText(img, label, (c1[0], c1[1] + t_size[1] + 4),
-                    cv2.FONT_HERSHEY_PLAIN, 1, [225, 255, 255], 1)
+
+        if self._display_classification:
+            cv2.putText(img, label, (c1[0], c1[1] + t_size[1] + 4),
+                        cv2.FONT_HERSHEY_PLAIN, 1, [225, 255, 255], 1)
         return img
 
     @property
@@ -444,6 +451,7 @@ class YoloLiveVideoStream(Detector):
 
 
         self.output = prediction
+        #print(self.output)
         im_dim = im_dim.repeat(self.output.size(0), 1)
         scaling_factor = torch.min(self._img_size/im_dim,1)[0].view(-1,1)
 
@@ -451,7 +459,6 @@ class YoloLiveVideoStream(Detector):
         self.output[:,[2,4]] -= (self._img_size - scaling_factor*im_dim[:,1].view(-1,1))/2
 
         self.output[:,1:5] /= scaling_factor
-
 
         list(map(lambda x: self.write(x, orig_im), self.output))
         pose_list = []
@@ -531,7 +538,6 @@ class YoloLiveVideoStream(Detector):
         Return:
             img: The final image containing the bounding boxes drawn.
         """
-        #print(type(img))
         c1 = tuple(x[1:3].int())  # top-left coordinates
         c2 = tuple(x[3:5].int())  # bottom-right coordinates
 
@@ -540,11 +546,15 @@ class YoloLiveVideoStream(Detector):
 
         colors = self._get_colors()
         color = random.choice(colors)
-        cv2.rectangle(img, c1, c2,color, 1)
-        t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 1 , 1)[0]
+        cv2.rectangle(img, c1, c2, color, 1)
+        t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 1, 1)[0]
         c2 = c1[0] + t_size[0] + 3, c1[1] + t_size[1] + 4
-        cv2.rectangle(img, c1, c2,color, -1)
-        cv2.putText(img, label, (c1[0], c1[1] + t_size[1] + 4), cv2.FONT_HERSHEY_PLAIN, 1, [225,255,255], 1);
+        #cv2.rectangle(img, c1, c2, color, -1)
+
+        if self._display_classification:
+            cv2.putText(
+                        img, label, (c1[0], c1[1] + t_size[1] + 4),
+                        cv2.FONT_HERSHEY_PLAIN, 1, [225, 255, 255], 1)
         return img
 
 class YoloVideoRun(YoloLiveVideoStream):

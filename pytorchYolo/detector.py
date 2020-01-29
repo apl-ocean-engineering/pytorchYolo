@@ -16,10 +16,13 @@ import glob
 
 class Square:
     def __init__(self, lower_corner, width, height):
-        self.lower_x = int(lower_corner[0].item())
-        self.lower_y = int(lower_corner[1].item())
-        self.upper_x = int(self.lower_x + width)
-        self.upper_y = int(self.lower_y + height)
+        lower_x = int(lower_corner[0].item())
+        lower_y = int(lower_corner[1].item())
+        self.upper_x = int(lower_x + width)
+        self.upper_y = int(lower_y + height)
+
+        self.lower_x = max(0, lower_x)
+        self.lower_y = max(0, lower_y)
 
     def print_square(self):
         print((self.lower_x, self.lower_y), (self.upper_x, self.upper_y))
@@ -79,6 +82,8 @@ class Detector():
         self.save_predictions_name = args.save_predictions_name
         self.save_images = args.save_images
 
+        self.write_images = True
+
 
 
     def _parse_data_init(self):
@@ -112,13 +117,13 @@ class Detector():
                 self.save_detection_path== '/'
             if self.save_predictions_name == " ":
                 prediction_save_path = self.save_detection_path + \
-                    fname.replace('.jpg', '.txt')
+                    fname.replace('.png', '.txt')
             else:
                 if self.save_predictions_name[-1] != '/':
                     self.save_predictions_name += '/'
 
                 prediction_save_path = self.save_detection_path + \
-                    self.save_predictions_name + fname.replace('.jpg', '.txt')
+                    self.save_predictions_name + fname.replace('.png', '.txt')
 
         return prediction_save_path
 
@@ -144,10 +149,11 @@ class Detector():
         cls = int(x[-1])  # get the class index
         label = "{0}".format(class_color_pair[cls][0])
         color = class_color_pair[cls][1]
-        cv2.rectangle(img, c1, c2, color, 1)
-        t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 1, 1)[0]
-        c2 = c1[0] + t_size[0] + 3, c1[1] + t_size[1] + 4
-        cv2.rectangle(img, c1, c2, color, -1)
+        if self.write_images:
+            cv2.rectangle(img, c1, c2, color, 1)
+            t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 1, 1)[0]
+            c2 = c1[0] + t_size[0] + 3, c1[1] + t_size[1] + 4
+            cv2.rectangle(img, c1, c2, color, -1)
 
         if self._display_classification:
             cv2.putText(img, label, (c1[0], c1[1] + t_size[1] + 4),
@@ -366,7 +372,8 @@ class YoloImgRun(Detector):
         self._start_time_draw_box = time()
 
         # draw the boxes on the images
-        list(map(lambda x: self.write(x, loaded_images), output))
+        if self.write_images:
+            list(map(lambda x: self.write(x, loaded_images), output))
 
         # Generate output file names
         detection_names = pd.Series(imlist).apply(lambda x:
@@ -446,7 +453,7 @@ class YoloLiveVideoStream(Detector):
                 print("{0:20s} {1:s}".format("Objects Detected:", ""))
                 print("----------------------------------------------------------")
                 print(self.save_predictions)
-            return False, [None]
+            return False, [None], [None]
 
 
 
@@ -460,11 +467,14 @@ class YoloLiveVideoStream(Detector):
 
         self.output[:,1:5] /= scaling_factor
 
+
         list(map(lambda x: self.write(x, orig_im), self.output))
         pose_list = []
         square_list = []
+        class_list = []
         if self.save_predictions:
             prediction_save_path = self.gen_save_path(fname)
+            print(prediction_save_path)
             f = open(prediction_save_path, 'w+')
             # if self.save_detection_path[-1] != '/':
             #     self.save_detection_path== '/'
@@ -484,7 +494,8 @@ class YoloLiveVideoStream(Detector):
         for x in self.output:
             c1 = tuple(x[1:3])  # top-left coordinates
             c2 = tuple(x[3:5])  # bottom-right coordinates
-
+            cls = int(x[-1])
+            class_list.append(str(self.classes[cls]))
 
             width_x = abs(c1[0].item() - c2[0].item())
             width_y = abs(c1[1].item() - c2[1].item())
@@ -494,14 +505,14 @@ class YoloLiveVideoStream(Detector):
 
             center_x = c1[0].item() + width_x/2
             center_y = c1[1].item() + width_y/2
-            pose_list.append([center_x/img_shape[1], center_y/img_shape[0], width_x/img_shape[1], width_y/img_shape[0]])
+            pose_list.append([center_x/img_shape[1], center_y/img_shape[0], width_x/img_shape[1], width_y/img_shape[0], cls])
         if self.save_predictions:
             sorted_output = sorted(pose_list)
             for i, write_list in enumerate(sorted_output):
                 if i < len(full_class_scores):
-                    output_write = str(0) + ' ' + str(1.0) + ' ' + str(write_list[0]) + ' ' + str(write_list[1]) + ' ' +  str(write_list[2]) + ' ' + str(write_list[3])
+                    output_write = str(write_list[-1]) + ' ' + str(1.0) + ' ' + str(write_list[0]) + ' ' + str(write_list[1]) + ' ' +  str(write_list[2]) + ' ' + str(write_list[3])
                 else:
-                    output_write = str(0) + ' ' + str(1.0) + ' ' + str(write_list[0]) + ' ' + str(write_list[1]) + ' ' +  str(write_list[2]) + ' ' + str(write_list[3])
+                    output_write = str(write_list[-1]) + ' ' + str(1.0) + ' ' + str(write_list[0]) + ' ' + str(write_list[1]) + ' ' +  str(write_list[2]) + ' ' + str(write_list[3])
                 f.write(output_write + '\n')
 
             f.close()
@@ -520,9 +531,9 @@ class YoloLiveVideoStream(Detector):
             print("----------------------------------------------------------")
         key = cv2.waitKey(wait_key)
         if key & 0xFF == ord('q'):
-            return True, square_list
+            return True, square_list, class_list
 
-        return True, square_list
+        return True, square_list, class_list
 
 
 
@@ -538,18 +549,22 @@ class YoloLiveVideoStream(Detector):
         Return:
             img: The final image containing the bounding boxes drawn.
         """
+
         c1 = tuple(x[1:3].int())  # top-left coordinates
         c2 = tuple(x[3:5].int())  # bottom-right coordinates
-
+        #print('x')
+        #print(x)
         cls = int(x[-1])
+        #print(cls)
         label = "{0}".format(self.classes[cls])
 
         colors = self._get_colors()
         color = random.choice(colors)
-        cv2.rectangle(img, c1, c2, color, 1)
-        t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 1, 1)[0]
-        c2 = c1[0] + t_size[0] + 3, c1[1] + t_size[1] + 4
-        #cv2.rectangle(img, c1, c2, color, -1)
+        if self.write_images:
+            cv2.rectangle(img, c1, c2, color, 1)
+            t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 1, 1)[0]
+            c2 = c1[0] + t_size[0] + 3, c1[1] + t_size[1] + 4
+            #cv2.rectangle(img, c1, c2, color, -1)
 
         if self._display_classification:
             cv2.putText(
@@ -601,7 +616,7 @@ class YoloImageStream(YoloLiveVideoStream):
                 if img is None:
                     continue
 
-                detection, sq = self.stream_img(img, frame.split('/')[-1], count = count)
+                detection, sq, _ = self.stream_img(img, frame.split('/')[-1], count = count, wait_key = 0)
                 count+=1
                 sleep(pause)
         else:

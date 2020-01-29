@@ -396,7 +396,10 @@ class YoloLiveVideoStream(Detector):
             img (np array): Input opencv image
 
         Returns:
-            None
+            Detection, Square_list, class_list
+                Detection (bool): If any detections were seen
+                square_list: list of bounding boxes
+                class_list: classification name for all detections
         """
 
         display_name = "frame" + display_name_append
@@ -425,7 +428,7 @@ class YoloLiveVideoStream(Detector):
 
             if self.display:
                 cv2.imshow(display_name, orig_im)
-            key = cv2.waitKey(wait_key)
+                cv2.waitKey(wait_key)
             phrase = "img predicted in %f seconds" % (end_img_time
                                                       - start_img_time)
             if self._verbose:
@@ -489,7 +492,7 @@ class YoloLiveVideoStream(Detector):
                         orig_im)
         if self.display:
             cv2.imshow(display_name, orig_im)
-        cv2.waitKey(wait_key)
+            cv2.waitKey(wait_key)
 
         objs = [self.classes[int(x[-1])] for x in prediction]
         phrase = "img predicted in %f seconds" % (end_img_time
@@ -498,9 +501,6 @@ class YoloLiveVideoStream(Detector):
             print(phrase)
             print("{0:20s} {1:s}".format("Objects Detected:", " ".join(objs)))
             print("----------------------------------------------------------")
-        key = cv2.waitKey(wait_key)
-        if key & 0xFF == ord('q'):
-            return True, square_list, class_list
 
         return True, square_list, class_list
 
@@ -558,7 +558,7 @@ class YoloVideoRun(YoloLiveVideoStream):
             ret, frame = cap.read()
             if ret:
                 if self._verbose:
-                    print("FPS of the video is {:5.2f}".format( frames / (time() - start)))
+                    print("FPS of the video is {:5.2f}".format(frames / (time() - start)))
 
             else:
                 break

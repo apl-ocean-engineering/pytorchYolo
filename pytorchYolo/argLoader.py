@@ -34,6 +34,9 @@ class ArgLoader:
                                  perform detection upon. \
                                  Only needed if reading VIDEO from disk",
                                  default="/data/video.avi", type=str)
+        self.parser.add_argument("--img_encoding",
+                                 help="image encoding", default=".png",
+                                 type=str)
         self.parser.add_argument("--output",
                                  help="Image / Directory to store \
                                  detections to",

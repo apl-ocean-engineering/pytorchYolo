@@ -45,6 +45,7 @@ class Detector():
     def __init__(self, args):
         # Load and parse args
         self._images = args.images
+        self._encoding = args.img_encoding
         self._videofile = args.video
         self._batch_size = args.batch_size
         self._conf_thresh = args.conf_thresh
@@ -113,13 +114,13 @@ class Detector():
                 self.save_detection_path == '/'
             if self.save_predictions_name == " ":
                 prediction_save_path = self.save_detection_path + \
-                    fname.replace('.png', '.txt')
+                    fname.replace(self._encoding, '.txt')
             else:
                 if self.save_predictions_name[-1] != '/':
                     self.save_predictions_name += '/'
 
                 prediction_save_path = self.save_detection_path + \
-                    self.save_predictions_name + fname.replace('.png', '.txt')
+                    self.save_predictions_name + fname.replace(self._encoding, '.txt')
 
 
         return prediction_save_path
@@ -513,7 +514,7 @@ class YoloLiveVideoStream(Detector):
 
             f.close()
         if self.save_images:
-            cv2.imwrite('output/' + display_name + str(count) + '.png',
+            cv2.imwrite('output/' + display_name + str(count) + self._encoding,
                         orig_im)
 
         if self.display:

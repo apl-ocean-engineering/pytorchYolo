@@ -74,13 +74,10 @@ class ArgLoader:
                                  If true, point images to base folder",
                                  default=False, type=bool)
 
-
     @property
     def args(self):
         """
         Parse command line arguments passed to the detector module.
 
         """
-        _args = self.parser.parse_args()
-        #print(_args.display_classification)
-        return _args
+        return self.parser.parse_args()

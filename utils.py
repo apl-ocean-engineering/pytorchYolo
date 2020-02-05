@@ -7,7 +7,7 @@ import torch.nn as nn
 
 from pytorchYolo.constants import *
 from pytorchYolo.layers import EmptyLayer, DetectionLayer
-
+import os
 
 def parse_cfg(cfgfile):
     """
@@ -25,6 +25,8 @@ def parse_cfg(cfgfile):
     blocks (list): List of blocks in the neural network.
 
     """
+    if cfgfile[0] != '/':
+       cfgfile = cfgfile
     file = open(cfgfile, 'r')
     lines = file.read().split('\n')  # store the lines in a list
     lines = [x for x in lines if len(x) > 0]  # get read of the empty lines
@@ -326,6 +328,7 @@ def filter_transform_predictions(predictions, num_classes, confidence_threshold=
         max_conf_class_index = max_conf_class_index.float().unsqueeze(1)
 
         image_predictions = torch.cat((image_predictions[:, :5], max_conf_class_score, max_conf_class_index), 1)
+
         # Next, we filter out all the boxes which had 0 in their confidence score
         non_zero_indices = torch.nonzero(image_predictions[:, 4])  # 4 is the index holding the confidence score
 
@@ -343,7 +346,6 @@ def filter_transform_predictions(predictions, num_classes, confidence_threshold=
 
         # We now perform non-max suppression class-wise.
         for class_ in img_classes:
-            #print("cls", class_)
             # First we gather the boxes which predict the above class
             image_predictions_class = confident_image_predictions[confident_image_predictions[:, -1] ==
                                                                   class_].view(-1, 7)
@@ -408,7 +410,6 @@ def load_classes(names_file):
     :param names_file: Path to the file containing the list of class names.
     :return class_names: List of class names.
     """
-    print(names_file)
     with open(names_file, 'r') as file_names:
         class_names = file_names.readlines()
     class_names = list(filter(len, map(str.strip, class_names)))

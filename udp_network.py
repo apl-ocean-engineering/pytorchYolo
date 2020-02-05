@@ -14,91 +14,101 @@ Where:
 
 from pytorchYolo.detector import YoloLiveVideoStream
 from pytorchYolo.argLoader import ArgLoader
+from ampProc.stereo_processing import StereoProcessing
+
+from os.path import dirname, abspath
+
 import cv2
 import os
+
 from socket import *
 from struct import pack, unpack
 import numpy as np
+import time
 
+
+server_ip = '127.0.0.1'
+server_port = 50000
+
+IMG1_NAME='img1'
+IMG2_NAME='img2'
 
 class ServerProtocol:
 
-    def __init__(self, detector):
+    def __init__(self, args, detector):
+        self.SP = StereoProcessing(args, detector)
+
         self.socket = None
         self.output_dir = '.'
         self.file_num = 1
 
         self.detector = detector
 
+        cv2.namedWindow(IMG1_NAME, cv2.WINDOW_NORMAL)
+        cv2.namedWindow(IMG2_NAME, cv2.WINDOW_NORMAL)
+
+
     def handle_images(self, server_ip, server_port):
         """
         Accepts 2 MANTA Images
         """
-        self.socket = socket(AF_INET, SOCK_STREAM)
-        self.socket.bind((server_ip, server_port))
-        self.socket.listen(5)
-        (conn, addr) = self.socket.accept()
-        try:
+        with socket(AF_INET, SOCK_STREAM) as s:
+            s.bind((server_ip, server_port))
+            s.listen(1)
+            (conn, addr) = s.accept()
+
             while True:
+                    time_inital = time.time()
+                    header = conn.recv(1)
+                    images = []
+                    for i in range(2):
+                        count = 0
+                        sb = conn.recv(4)
+                        (length,) = unpack('I', sb)
+                        data_arr_lst = []
+                        while count < length:
+                            to_read = length - count
 
-                # receive data stream. it won't accept data packet greater than 1024 bytes
-                sb = conn.recv(4)
-                (size,) = unpack('!I', sb)
-                images = []
-                for i in range(size):
-                    bs = conn.recv(8)
-                    (length,) = unpack('>Q', bs)
-                    print(length)
-                    data = b''
-                    while len(data) < length:
-                        # doing it in batches is generally better than trying
-                        # to do it all in one go, so I believe.
-                        to_read = length - len(data)
-                        data += conn.recv(
-                            4096 if to_read > 4096 else to_read)
+                            data = conn.recv(
+                                4096 if to_read > 4096 else to_read)
 
-                    images.append(data)
-                if len(images) >= 2:
-                    detection = self.stereo_detection(
-                                    images[0], img2 = images[1])
-                else:
-                    detection = self.stereo_detection(
-                                    images[0])
+                            buff = np.frombuffer(data, np.uint8)
+                            data_arr_lst.append(buff)
+                            count+=len(data)
+                        img = np.concatenate(data_arr_lst, axis=0).reshape((2056, 2464))
+                        images.append(img)
 
-                if detection:
-                    data = True
-                else:
-                    data = False
-                return_data = pack('?', data)
-                conn.send(return_data)
+                    print("Time elapsed", time.time() - time_inital)
+                    cv2.imshow(IMG1_NAME, images[0])
+                    if len(images) >= 2:
 
-        finally:
-             conn.shutdown(socket.SHUT_WR)
-             conn.close()
+                        detection = self.stereo_detection(
+                                        images[0], img2 = images[1])
+                    else:
+                        detection = self.stereo_detection(
+                                        images[0])
+
+
+                    detection = True
+                    if detection:
+                        data = True
+                    else:
+                        data = False
+
+                    return_data = pack('?', data)
+
+
+
+                    conn.send(return_data)
+
 
 
     def stereo_detection(self, img1, img2 = None):
-        detection1 = self.run_image(img1)
-        if img2 is not None:
-            detection2 = self.run_image(img2)
-        else:
-            detection2 = False
-
-        if detection1 and detection2:
-            return True
-
-        return False
-
-    def run_image(self, img):
-        print("here")
-        nparr = np.fromstring(img, np.uint8)
-        img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
+        #if img1.shape[2] != 3:
+        img1 = cv2.cvtColor(img1, cv2.COLOR_GRAY2RGB)
+        img2 = cv2.cvtColor(img2, cv2.COLOR_GRAY2RGB)
         self.detector.display = False
-        detection, _ = self.detector.stream_img(img_np, wait_key =1)
-
-        cv2.imshow("img_np", img_np)
-        cv2.waitKey(1)
+        detection = self.SP.run_images(img1, img2=img2)
 
         return detection
 
@@ -110,9 +120,18 @@ class ServerProtocol:
 
 if __name__ == '__main__':
     argLoader = ArgLoader()
+    argLoader.parser.add_argument(
+        "--calibration_yaml",
+        help="Path to calibration yaml specify path of calibration files",
+        default=dirname(dirname(abspath(
+            __file__))) + "/cfg/calibrationConfig.yaml")
+    argLoader.parser.add_argument(
+        "--base_path", help="Base folder to calibration values",
+        default=dirname(dirname(abspath(__file__))) + "/calibration/")
+
     args = argLoader.args  # parse the command line arguments
 
     detector = YoloLiveVideoStream(args)
 
-    sp = ServerProtocol(detector)
-    sp.handle_images('127.0.0.1', 5000)
+    sp = ServerProtocol(args, detector)
+    sp.handle_images(server_ip, server_port)

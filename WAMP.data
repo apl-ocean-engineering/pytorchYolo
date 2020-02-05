@@ -1,0 +1,5 @@
+#Base path: base directory where all YOLO directories live. names, cfg, and weights location relative to base path. put '/' in fron for absolute path (e.g. /home/#AMP_YOLO_data/data/classesYOLO.txt)
+base_path = cfg
+names = classesYOLO.txt
+cfg = yolov3-wells.cfg
+weights = yolov3-WAMP_retrain.weights

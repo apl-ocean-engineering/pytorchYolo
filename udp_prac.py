@@ -18,7 +18,7 @@ def send(sock, frame):
     sock.send( stringData );
 
 TCP_IP = '127.0.0.1'
-TCP_PORT = 50001
+TCP_PORT = 50000
 
 sock = socket.socket()
 sock.connect((TCP_IP, TCP_PORT))
@@ -39,7 +39,7 @@ while True:
         frame2 = cv2.imread(fname2)
         send(sock, frame1)
         send(sock, frame2)
-        detection = struct.unpack('?', sock.recv(1))
+        detection = struct.unpack('?', sock.recv(1))[0]
         print(detection)
         detection_list = []
         class_list = []

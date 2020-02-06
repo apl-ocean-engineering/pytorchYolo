@@ -28,7 +28,7 @@ import time
 
 
 server_ip = '127.0.0.1'
-server_port = 50001
+server_port = 50000
 
 IMG1_NAME='img1'
 IMG2_NAME='img2'
@@ -120,7 +120,7 @@ class ServerProtocol:
                             = self.stereo_detection(
                                         images[0])
 
-                    detection = True
+                    detection = False
 
                     """
                     Return data:
@@ -129,7 +129,7 @@ class ServerProtocol:
                             2. Length of detections (i.e. bounding boxes)
                             3. 'N' Bounding boxes packed as 4 ints
                             4. 'N' Detection names as ints
-                    """ 
+                    """
                     return_data = pack('?', detection)
                     conn.send(return_data)
 

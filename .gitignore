@@ -1,5 +1,6 @@
 *.pyc
 data/*
+weights/*.weights
 .idea/*
 weights/*
 output/*

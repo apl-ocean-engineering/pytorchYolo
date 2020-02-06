@@ -488,20 +488,6 @@ class YoloLiveVideoStream(Detector):
             prediction_save_path = self.gen_save_path(fname)
             f = open(prediction_save_path, 'w+')
 
-        for x in self.output:
-            c1 = tuple(x[1:3])  # top-left coordinates
-            c2 = tuple(x[3:5])  # bottom-right coordinates
-
-
-            width_x = abs(c1[0].item() - c2[0].item())
-            width_y = abs(c1[1].item() - c2[1].item())
-
-            sq = Square(c1, width_x, width_y)
-            square_list.append(sq)
-
-            center_x = c1[0].item() + width_x/2
-            center_y = c1[1].item() + width_y/2
-            pose_list.append([center_x/img_shape[1], center_y/img_shape[0], width_x/img_shape[1], width_y/img_shape[0]])
         if self.save_predictions:
             sorted_output = sorted(pose_list)
             for i, write_list in enumerate(sorted_output):

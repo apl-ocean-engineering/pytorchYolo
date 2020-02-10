@@ -26,9 +26,8 @@ from struct import pack, unpack
 import numpy as np
 import time
 
-
-server_ip = '127.0.0.1'
-server_port = 50000
+server_ip = '192.168.2.101'
+server_port = 5000
 
 IMG1_NAME='img1'
 IMG2_NAME='img2'
@@ -78,12 +77,16 @@ class ServerProtocol:
                 buf = b''
             while True:
                     time_inital = time.time()
-                    header = conn.recv(1)
+                    #header = conn.recv(1)
+                    #(num,) = unpack('I', header)
                     images = []
                     for i in range(2):
                         count = 0
                         #print('here')
+
                         sb = conn.recv(4)
+                        if not sb:
+                            continue
                         (length,) = unpack('I', sb)
                         #print(length)
                         data_arr_lst = []
@@ -101,6 +104,7 @@ class ServerProtocol:
                             img = np.fromstring(buf, dtype='uint8').reshape((self.args.height,
                                              self.args.width))
                         else:
+                            #print(data_arr_lst)
                             img = np.concatenate(data_arr_lst,
                                   axis=0).reshape((self.args.height,
                                                    self.args.width))
@@ -108,19 +112,21 @@ class ServerProtocol:
                         images.append(img)
 
                     cv2.imshow(IMG1_NAME, images[0])
+                    if len(images[0]):
+                        cv2.imshow(IMG2_NAME, images[1])
 
                     if self.args.show_image:
                         cv2.waitKey(1)
-                    if len(images) >= 2:
-                        detection, squares1, squares2, class_list1, class_list2 \
-                            = self.stereo_detection(
-                                        images[0], img2 = images[1])
-                    else:
-                        detection, squares1, squares2, class_list1, class_list2 \
-                            = self.stereo_detection(
-                                        images[0])
+                    # if len(images) >= 2:
+                    #     detection, squares1, squares2, class_list1, class_list2 \
+                    #         = self.stereo_detection(
+                    #                     images[0], img2 = images[1])
+                    # else:
+                    #     detection, squares1, squares2, class_list1, class_list2 \
+                    #         = self.stereo_detection(
+                    #                     images[0])
 
-                    detection = False
+                    detection = True
 
                     """
                     Return data:
@@ -135,17 +141,18 @@ class ServerProtocol:
 
                     if detection:
                         for i in range(2):
-                            detection_length = pack('I', len(SQUARE_LIST))
+                            detection_length = pack('>I', len(SQUARE_LIST))
                             conn.send(detection_length)
-                            for sq in SQUARE_LIST:
+                            for i, sq in enumerate(SQUARE_LIST):
                                 square_information = [sq.lower_x, sq.lower_y,
                                     sq.upper_x, sq.upper_y]
-                                packed_sq = pack('%sf' % len(square_information),
+                                packed_sq = pack('>%sf' % len(square_information),
                                             *square_information)
                                 conn.send(packed_sq)
-                            for class_name in CLASS_LIST:
-                                packed_class = pack('I', 1)
+                                packed_class = pack('>I', i)
                                 conn.send(packed_class)
+
+                    #exit()
 
 
 

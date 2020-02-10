@@ -18,6 +18,8 @@ from ampProc.stereo_processing import StereoProcessing
 
 from os.path import dirname, abspath
 
+import errno
+
 import cv2
 import os
 
@@ -26,7 +28,8 @@ from struct import pack, unpack
 import numpy as np
 import time
 
-server_ip = '192.168.2.101'
+#server_ip = '192.168.2.101'
+server_ip = '127.0.0.1'
 server_port = 5000
 
 IMG1_NAME='img1'
@@ -69,13 +72,15 @@ class ServerProtocol:
         """
         Accepts 2 MANTA Images
         """
-        with socket(AF_INET, SOCK_STREAM) as s:
-            s.bind((server_ip, server_port))
-            s.listen(1)
-            (conn, addr) = s.accept()
-            if self.args.TCP_string:
-                buf = b''
-            while True:
+        while True:
+            print('Here')
+            with socket(AF_INET, SOCK_STREAM) as s:
+                s.bind((server_ip, server_port))
+                s.listen(1)
+                (conn, addr) = s.accept()
+                if self.args.TCP_string:
+                    buf = b''
+                while True:
                     time_inital = time.time()
                     #header = conn.recv(1)
                     #(num,) = unpack('I', header)
@@ -86,9 +91,10 @@ class ServerProtocol:
 
                         sb = conn.recv(4)
                         if not sb:
-                            continue
+                            break
                         (length,) = unpack('I', sb)
-                        #print(length)
+                        if not length:
+                            break
                         data_arr_lst = []
                         while count < length:
                             to_read = length - count
@@ -110,9 +116,9 @@ class ServerProtocol:
                                                    self.args.width))
                         #print(img.shape)
                         images.append(img)
-
-                    cv2.imshow(IMG1_NAME, images[0])
-                    if len(images[0]):
+                    if images != []:
+                        cv2.imshow(IMG1_NAME, images[0])
+                    if len(images) > 1:
                         cv2.imshow(IMG2_NAME, images[1])
 
                     if self.args.show_image:
@@ -126,7 +132,7 @@ class ServerProtocol:
                     #         = self.stereo_detection(
                     #                     images[0])
 
-                    detection = True
+                    detection = False
 
                     """
                     Return data:
@@ -136,9 +142,13 @@ class ServerProtocol:
                             3. 'N' Bounding boxes packed as 4 ints
                             4. 'N' Detection names as ints
                     """
-                    return_data = pack('?', detection)
-                    conn.send(return_data)
-
+                    try:
+                        return_data = pack('?', detection)
+                        conn.send(return_data)
+                    except IOError as e:
+                        if e.errno == errno.EPIPE:
+                            print("BROKEN PIPE")
+                        break
                     if detection:
                         for i in range(2):
                             detection_length = pack('>I', len(SQUARE_LIST))
@@ -152,7 +162,7 @@ class ServerProtocol:
                                 packed_class = pack('>I', i)
                                 conn.send(packed_class)
 
-                    #exit()
+                        #exit()
 
 
 

@@ -18,13 +18,13 @@ def send(sock, frame):
     sock.send( stringData );
 
 TCP_IP = '127.0.0.1'
-TCP_PORT = 50000
+TCP_PORT = 5000
 
 sock = socket.socket()
 sock.connect((TCP_IP, TCP_PORT))
 
-imgs1 = sorted(glob.glob('/home/mitchell/MarineSitu/triggered_image/MANTA1/*.jpg'))
-imgs2 = sorted(glob.glob('/home/mitchell/MarineSitu/triggered_image/MANTA2/*.jpg'))
+imgs1 = sorted(glob.glob('/home/mitchell/WAMP_workspace/WETS_stereo_test_images/2018_10_17/2018_10_17 12_58_19/Manta 1/*.jpg'))
+imgs2 = sorted(glob.glob('/home/mitchell/WAMP_workspace/WETS_stereo_test_images/2018_10_17/2018_10_17 12_58_19/Manta 2/*.jpg'))
 images = zip(imgs1, imgs2)
 
 encode_param=[int(cv2.IMWRITE_JPEG_QUALITY),90]
@@ -33,7 +33,7 @@ header = struct.pack('?', True)
 while True:
 
     for fname1, fname2 in images:
-        sock.send(header)
+        #sock.send(header)
         frame1 = cv2.imread(fname1)
 
         frame2 = cv2.imread(fname2)
@@ -57,7 +57,7 @@ while True:
                     print(c)
     #
 sock.close()
-decimg=cv2.imdecode(data,1)
-cv2.imshow('CLIENT',decimg)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+# #decimg=cv2.imdecode(data,1)
+# cv2.imshow('CLIENT',decimg)
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()

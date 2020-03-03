@@ -7,6 +7,7 @@ output/*
 *.egg-info
 helper_scripts/*
 cfg/*
+pytorchYolo/stereo_processing.py
 WAMP.data
 atom_py.py
 classesYOLO.txt

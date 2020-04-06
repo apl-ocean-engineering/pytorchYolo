@@ -18,9 +18,10 @@ class ArgLoader:
                                  images. 1 for streaming video. 2 for all \
                                  others (ROS wrappers, etc.)",
                                  default=0, type=int)
+        # WINDOES LOCATION
         self.parser.add_argument("--data_cfg",
                                  help="Path to the data cfg file",
-                                 default="cfg/YOLO.data", type=str)
+                                 default="C:\\Users\\AMP\\img_processing\\YOLO_cfg\\AMP_YOLO\\AMP.data", type=str)
         self.parser.add_argument("--verbose",
                                  help="Display detections",
                                  default=False, type=bool)

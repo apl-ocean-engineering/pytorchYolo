@@ -68,7 +68,7 @@ class ArgLoader:
         self.parser.add_argument("--save_predictions_path",
                                  help="Path to save network predictions",
                                  default=dirname(dirname(abspath(__file__)))
-                                 + "/data/paper_detections_BINARY/wells500/",
+                                 + "/output/",
                                 type=str)
         self.parser.add_argument("--save_predictions_name",
                                  help="Sub-folder to save detections",

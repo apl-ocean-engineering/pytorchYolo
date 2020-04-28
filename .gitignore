@@ -7,3 +7,10 @@ output/*
 *.egg-info
 helper_scripts/*
 cfg/*
+pytorchYolo/stereo_processing.py
+WAMP.data
+atom_py.py
+classesYOLO.txt
+udp_prac.py
+udp_server_prac.py
+udp_network.py

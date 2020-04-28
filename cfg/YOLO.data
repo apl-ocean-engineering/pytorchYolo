@@ -1,5 +1,0 @@
-#Base path: base directory where all YOLO directories live. names, cfg, and weights location relative to base path. put '/' in fron for absolute path (e.g. /home/#AMP_YOLO_data/data/classesYOLO.txt)
-base_path = /home/mitchell/MarineSitu/pytorchYolo
-names = cfg/classesYOLO.txt
-cfg = cfg/yolov3.cfg
-weights = weights/yolov3.weights

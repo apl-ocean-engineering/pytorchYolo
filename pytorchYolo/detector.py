@@ -108,19 +108,23 @@ class Detector():
         self._weights_file = weights_path.rstrip()
 
     def gen_save_path(self, fname):
+        if fname[-3:] == 'png':
+            encoding = '.png'
+        else:
+            encoding = '.jpg'
         if self.save_predictions:
             if self.save_detection_path[-1] != '/':
 
                 self.save_detection_path == '/'
             if self.save_predictions_name == " ":
                 prediction_save_path = self.save_detection_path + \
-                    fname.replace(self._encoding, '.txt')
+                    fname.replace(encoding, '.txt')
             else:
                 if self.save_predictions_name[-1] != '/':
                     self.save_predictions_name += '/'
 
                 prediction_save_path = self.save_detection_path + \
-                    self.save_predictions_name + fname.replace(self._encoding, '.txt')
+                    self.save_predictions_name + fname.replace(encoding, '.txt')
 
 
         return prediction_save_path
@@ -394,7 +398,7 @@ class YoloLiveVideoStream(Detector):
     display = True
 
     def stream_img(self, img, fname=' ', display_name_append='',
-                   wait_key=100, count=0):
+                   wait_key=1, count=0):
 
         """
         Main function. Accepts a cv_image and runs the back end YOLO network
@@ -599,8 +603,7 @@ class YoloImageStream(YoloLiveVideoStream):
                 detection, sq, _ = self.stream_img(
                                                    img,
                                                    frame.split('/')[-1],
-                                                   count=count,
-                                                   wait_key=0)
+                                                   count=count)
                 sleep(pause)
         else:
             cv2.namedWindow('frame1', cv2.WINDOW_NORMAL)

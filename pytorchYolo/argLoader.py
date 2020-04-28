@@ -58,7 +58,7 @@ class ArgLoader:
                                  default=416, type=int)
         self.parser.add_argument("--display_classification",
                                  help="Display classification type",
-                                 default=False, type=bool)
+                                 default=True, type=bool)
         self.parser.add_argument("--save_predictions",
                                  help="Save network predictions",
                                  default=False, type=bool)
@@ -68,7 +68,8 @@ class ArgLoader:
         self.parser.add_argument("--save_predictions_path",
                                  help="Path to save network predictions",
                                  default=dirname(dirname(abspath(__file__)))
-                                 + "/data/detections/", type=str)
+                                 + "/data/paper_detections_BINARY/wells500/",
+                                type=str)
         self.parser.add_argument("--save_predictions_name",
                                  help="Sub-folder to save detections",
                                  default=" ", type=str)

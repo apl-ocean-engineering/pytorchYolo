@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
+
 from time import time, sleep
+import numpy
+print(numpy.__version__) 
+import numpy.core
+import numpy.core.multiarray
+
 import torch
 from torch.autograd import Variable
 import cv2
+
 from pytorchYolo import utils
 from pytorchYolo import constants
 import os
@@ -394,7 +401,7 @@ class YoloLiveVideoStream(Detector):
     display = True
 
     def stream_img(self, img, fname=' ', display_name_append='',
-                   wait_key=100, count=0):
+                   wait_key=1, count=0):
 
         """
         Main function. Accepts a cv_image and runs the back end YOLO network
@@ -416,7 +423,7 @@ class YoloLiveVideoStream(Detector):
         img = utils.prepare_image(img, (self._img_size, self._img_size))
         im_dim = torch.FloatTensor((
                         orig_im.shape[1], orig_im.shape[0])).repeat(1, 2)
-
+        #print("GPU", self.gpu)
         if self.gpu:
             im_dim = im_dim.cuda()
             img = img.cuda()
@@ -434,6 +441,7 @@ class YoloLiveVideoStream(Detector):
                 f.close()
 
             if self.display:
+                #print('display')
                 cv2.imshow(display_name, orig_im)
                 cv2.waitKey(wait_key)
             phrase = "img predicted in %f seconds" % (end_img_time - start_img_time)
@@ -456,8 +464,8 @@ class YoloLiveVideoStream(Detector):
                 self._img_size - scaling_factor*im_dim[:, 1].view(-1, 1))/2
 
         self.output[:, 1:5] /= scaling_factor
-
-        list(map(lambda x: self.write(x, orig_im), self.output))
+        if self.display or self.save_images:
+            list(map(lambda x: self.write(x, orig_im), self.output))
         pose_list = []
         square_list = []
         class_list = []
@@ -589,7 +597,7 @@ class YoloImageStream(YoloLiveVideoStream):
         Main function. Find all images in a folder, send to YOLO network individually
         """
         if not self._use_dual_manta:
-            cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
+            #cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
             full_images = sorted(glob.glob(self._images + "/*"))
             for count, frame in enumerate(full_images):
                 img = cv2.imread(frame)
@@ -603,8 +611,8 @@ class YoloImageStream(YoloLiveVideoStream):
                                                    wait_key=0)
                 sleep(pause)
         else:
-            cv2.namedWindow('frame1', cv2.WINDOW_NORMAL)
-            cv2.namedWindow('frame2', cv2.WINDOW_NORMAL)
+            #cv2.namedWindow('frame1', cv2.WINDOW_NORMAL)
+            #cv2.namedWindow('frame2', cv2.WINDOW_NORMAL)
             manta1 = sorted(glob.glob(self._images + "/Manta 1/*"))
             manta2 = sorted(glob.glob(self._images + "/Manta 2/*"))
 

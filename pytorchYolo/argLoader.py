@@ -21,7 +21,7 @@ class ArgLoader:
         # WINDOES LOCATION
         self.parser.add_argument("--data_cfg",
                                  help="Path to the data cfg file",
-                                 default="C:\\Users\\AMP\\img_processing\\YOLO_cfg\\AMP_YOLO\\AMP.data", type=str)
+                                 default="cfg\\cfg.data", type=str)
         self.parser.add_argument("--verbose",
                                  help="Display detections",
                                  default=False, type=bool)

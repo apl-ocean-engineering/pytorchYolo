@@ -93,6 +93,9 @@ class Detector():
     def _parse_data_init(self):
         data_config = utils.parse_data_cfg(self._data_cfg_file)
         base_path = data_config[constants.BASE_PATH].rstrip()
+        if base_path == ".":
+            print('\\'.join(self._data_cfg_file.split('\\')[:-1]))
+            base_path = '/'.join(self._data_cfg_file.split('\\')[:-1])
         if data_config[constants.CONF_NAMES][0] == '/':
             names_path = data_config[constants.CONF_NAMES].rstrip()
         else:

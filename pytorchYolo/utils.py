@@ -35,6 +35,7 @@ def parse_cfg(cfgfile):
     blocks = []
 
     for line in lines:
+
         if line[0] == "[":  # This marks the start of a new block
             if len(block) != 0:  # If block is not empty, implies it is storing values of previous block.
                 blocks.append(block)  # add it the blocks list
@@ -429,6 +430,7 @@ def parse_data_cfg(data_cfg_file):
         if config_line[0] == "#":
             continue
         key, value = config_line.split('=')
+        # print(key, value)
 
         config[key.rstrip()] = value.lstrip()
 
